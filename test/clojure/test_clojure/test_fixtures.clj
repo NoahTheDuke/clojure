@@ -14,7 +14,7 @@
 (ns clojure.test-clojure.test-fixtures
   (:use clojure.test))
 
-(declare ^:dynamic *a* ^:dynamic *b* ^:dynamic *c* ^:dynamic *d*)
+(declare ^:dynamic *a* ^:dynamic *b* ^:dynamic *c* ^:dynamic *d* ^:dynamic *e*)
 
 (def ^:dynamic *n* 0)
 
@@ -29,6 +29,12 @@
 
 (defn fixture-d [f]
   (binding [*d* 11] (f)))
+
+(defn fixture-e [f]
+  (binding [*e* 13] (f)))
+
+(defn fixture-inc-e [f]
+  (binding [*e* (inc *e*)] (f)))
 
 (defn inc-n-fixture [f]
   (binding [*n* (inc *n*)] (f)))
@@ -53,6 +59,15 @@
 
 (deftest use-fixtures-replaces
   (is (= *n* 1)))
+
+(deftest ^{:clojure.test/fixtures [fixture-e]} can-use-individual-fixtures
+  (is (= 3 *a*))
+  (is (= 7 *c*))
+  (is (= 13 *e*)))
+
+(deftest ^{:clojure.test/fixtures [fixture-e fixture-inc-e inc-n-fixture]} individual-fixtures-combine
+  (is (= 14 *e*))
+  (is (= 2 *n*)))
 
 (deftest can-run-a-single-test-with-fixtures
   ;; We have to use a side-effecting fixture to test that the fixtures are

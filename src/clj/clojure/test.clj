@@ -714,7 +714,8 @@
     (binding [*testing-vars* (conj *testing-vars* v)]
       (do-report {:type :begin-test-var, :var v})
       (inc-report-counter :test)
-      (try (t)
+      (try (let [individual-fixtures (join-fixtures (::fixtures (meta v)))]
+             (individual-fixtures (fn [] (t))))
            (catch Throwable e
              (do-report {:type :error, :message "Uncaught exception, not in assertion."
                       :expected nil, :actual e})))
