@@ -8169,3 +8169,6 @@ fails, attempts to require sym's namespace and retries."
    :added "1.11"}
   [^double num]
   (Double/isInfinite num))
+
+(binding [*err* *out*]
+  (println "Loading compiler-like-errors"))

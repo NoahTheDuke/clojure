@@ -55,6 +55,11 @@
    ^PersistentHashMap (identity nil)
    :key))
 
+(defn instance-method-literal
+  "I throw an exception in an instance method form."
+  []
+  (.abc {} :key))
+
 (defn instance-method-reflected
   "I throw an exception in an instance method form."
   []

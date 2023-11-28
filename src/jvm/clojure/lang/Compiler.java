@@ -1004,7 +1004,8 @@ static public abstract class HostExpr implements Expr, MaybePrimitiveExpr{
 				if(c != null)
 					return new StaticMethodExpr(source, line, column, tag, c, munge(sym.name), args, tailPosition);
 				else
-					return new InstanceMethodExpr(source, line, column, tag, instance, munge(sym.name), args, tailPosition);
+					// RT.errPrintWriter().format("some meta?, %s %s\n", form, RT.meta(RT.second(form)));
+					return new InstanceMethodExpr(source, line, column, tag, tagOf(RT.second(form)), instance, munge(sym.name), args, tailPosition);
 				}
 		}
 	}
@@ -1457,7 +1458,7 @@ static class InstanceMethodExpr extends MethodExpr{
 			Method.getMethod("Object invokeInstanceMethod(Object,String,Object[])");
 
 
-	public InstanceMethodExpr(String source, int line, int column, Symbol tag, Expr target,
+	public InstanceMethodExpr(String source, int line, int column, Symbol tag, Symbol targetTag, Expr target,
 			String methodName, IPersistentVector args, boolean tailPosition)
 			{
 		this.source = source;
@@ -1470,6 +1471,14 @@ static class InstanceMethodExpr extends MethodExpr{
 		this.tailPosition = tailPosition;
 		if(target.hasJavaClass() && target.getJavaClass() != null)
 			{
+			if(targetTag!=null && Reflector.getSingleMethod(target.getJavaClass(), methodName) == null)
+				{
+				throw new CompilerException((String) SOURCE_PATH.deref(), lineDeref(), columnDeref(), Symbol.intern("." + methodName), CompilerException.PHASE_COMPILATION,
+						new IllegalArgumentException(
+							"No matching method " + methodName + " found" +
+							(target==null ? "" : " for " + target.getJavaClass().getName())
+						));
+				}
 			List methods = Reflector.getMethods(target.getJavaClass(), args.count(), methodName, false);
 			if(methods.isEmpty())
 				{
@@ -7560,6 +7569,12 @@ private static Symbol tagOf(Object o){
 		return (Symbol) tag;
 	else if(tag instanceof String)
 		return Symbol.intern(null, (String) tag);
+	else if(o instanceof String)
+		return Symbol.intern(null, "java.lang.String");
+	else if(o instanceof IPersistentMap)
+		return Symbol.intern(null, "clojure.lang.IPersistentMap");
+	else if(o instanceof IPersistentSet)
+		return Symbol.intern(null, "clojure.lang.IPersistentSet");
 	return null;
 }
 

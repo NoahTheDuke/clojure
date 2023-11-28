@@ -291,7 +291,8 @@
                                                (.printStackTrace t)
                                                )
                                            actual (.getLineNumber ^StackTraceElement (first frames))]
-                                       (= expected actual)))))]
+                                       (or (= expected actual)
+                                           (throw t))))))]
     (is (fails-on-line-number?  13 line/instance-field))
     (is (fails-on-line-number?  19 line/instance-field-reflected))
     (is (fails-on-line-number?  25 line/instance-field-unboxed))
@@ -299,15 +300,16 @@
     (is (fails-on-line-number?  40 line/instance-field-assign-reflected))
     (is (fails-on-line-number?  47 line/static-field-assign))
     (is (fails-on-line-number?  54 line/instance-method))
-    (is (fails-on-line-number?  61 line/instance-method-reflected))
-    (is (fails-on-line-number?  68 line/instance-method-unboxed))
-    (is (fails-on-line-number?  74 line/static-method))
-    (is (fails-on-line-number?  80 line/static-method-reflected))
-    (is (fails-on-line-number?  86 line/static-method-unboxed))
-    (is (fails-on-line-number?  92 line/invoke))
-    (is (fails-on-line-number? 101 line/threading))
-    (is (fails-on-line-number? 112 line/keyword-invoke))
-    (is (fails-on-line-number? 119 line/invoke-cast))))
+    (is (fails-on-line-number? nil line/instance-method-literal))
+    (is (fails-on-line-number?  66 line/instance-method-reflected))
+    (is (fails-on-line-number?  73 line/instance-method-unboxed))
+    (is (fails-on-line-number?  79 line/static-method))
+    (is (fails-on-line-number?  85 line/static-method-reflected))
+    (is (fails-on-line-number?  91 line/static-method-unboxed))
+    (is (fails-on-line-number?  97 line/invoke))
+    (is (fails-on-line-number? 106 line/threading))
+    (is (fails-on-line-number? 117 line/keyword-invoke))
+    (is (fails-on-line-number? 124 line/invoke-cast))))
 
 (deftest CLJ-979
   (is (= clojure.test_clojure.compilation.examples.X

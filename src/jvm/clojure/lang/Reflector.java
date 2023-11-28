@@ -494,6 +494,17 @@ static public Field getField(Class c, String name, boolean getStatics){
 	return null;
 }
 
+static public Method getSingleMethod(Class c, String name) {
+	Method[] allmethods = c.getMethods();
+	for (int i = 0; i < allmethods.length; i++)
+		{
+		Method method = allmethods[i];
+		if (name.equals(method.getName()))
+			return method;
+		}
+	return null;
+}
+
 static public List<Method> getMethods(Class c, int arity, String name, boolean getStatics){
 	Method[] allmethods = c.getMethods();
 	ArrayList methods = new ArrayList();
