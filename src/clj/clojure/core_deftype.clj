@@ -61,7 +61,24 @@
                        (disj 'Object 'java.lang.Object)
                        vec)
         methods (map (fn [[name params & body]]
-                       (cons name (maybe-destructured params body)))
+                       (let [conds (when (and (next body) (map? (first body)))
+                                     (first body))
+                             body (if conds (next body) body)
+                             conds (or conds (meta params))
+                             pre (:pre conds)
+                             post (:post conds)
+                             body (if post
+                                    `((let [~'% ~(if (< 1 (count body))
+                                                   `(do ~@body)
+                                                   (first body))]
+                                        ~@(map (fn* [c] `(assert ~c)) post)
+                                        ~'%))
+                                    body)
+                             body (if pre
+                                    (concat (map (fn* [c] `(assert ~c)) pre)
+                                            body)
+                                    body)]
+                         (cons name (maybe-destructured params body))))
                      (apply concat (vals impls)))]
     (when-let [bad-opts (seq (remove #{:no-print :load-ns} (keys opts)))]
       (throw (IllegalArgumentException. (apply print-str "Unsupported option(s) -" bad-opts))))

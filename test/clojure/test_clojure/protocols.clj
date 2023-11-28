@@ -691,6 +691,27 @@
           (reify LongsHintedProto
             (longs-hinted [_] (long-array [1])))))))
 
+;; CLJ-1490 - :pre/:post on defrecord method impls
+(defprotocol Proto-1490
+  (example [_ a b]))
+
+(defrecord Foo-1490 []
+  Proto-1490
+  (example [_ a b]
+    {:pre [(number? a) (number? b)]
+     :post [(pos? %)]}
+    (+ a b)))
+
+(deftest CLJ-1490-test
+  (is (example (->Foo-1490) 1 2)
+      "Basic functionality still works")
+  (is (thrown? java.lang.AssertionError
+                 (example (->Foo-1490) :a :b))
+        "Pre-conditions are checked")
+  (is (thrown? java.lang.AssertionError
+               (example (->Foo-1490) 1 -4))
+      "Post-conditions are checked"))
+
 ;; CLJ-1180 - resolve type hints in protocol methods
 
 (import 'clojure.lang.ISeq)
