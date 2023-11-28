@@ -4947,12 +4947,22 @@
    (let [m (re-matcher re s)]
      (re-find m))))
 
+(def
+  ^{:added "1.7"
+    :doc "The java.util.Random object that clojure.core's random functions
+         use. You can bind this to a specific instance of java.util.Random
+         to control randomness."
+    :dynamic true
+    :tag java.util.Random}
+  *rand*
+  (java.util.Random.))
+
 (defn rand
   "Returns a random floating point number between 0 (inclusive) and
   n (default 1) (exclusive)."
   {:added "1.0"
    :static true}
-  ([] (. Math (random)))
+  ([] (. *rand* (nextDouble)))
   ([n] (* n (rand))))
 
 (defn rand-int
@@ -7411,7 +7421,7 @@ fails, attempts to require sym's namespace and retries."
    :static true}
   [^java.util.Collection coll]
   (let [al (java.util.ArrayList. coll)]
-    (java.util.Collections/shuffle al)
+    (java.util.Collections/shuffle al *rand*)
     (clojure.lang.RT/vector (.toArray al))))
 
 (defn map-indexed
@@ -8169,3 +8179,6 @@ fails, attempts to require sym's namespace and retries."
    :added "1.11"}
   [^double num]
   (Double/isInfinite num))
+
+(binding [*err* *out*]
+  (println "Loading CLJ-1452-seedable-randomness"))
