@@ -745,6 +745,27 @@
        (cat (concat x y) zs))))
 
 ;;;;;;;;;;;;;;;;at this point all the support for syntax-quote exists;;;;;;;;;;;;;;;;;;;;;;
+(defmacro syntax-quote
+  "Return the given form as if wrapped in quote ('), with handling for
+  unqoute (~) and unquote-splicing (~@).
+
+  Recursively walks the form: For all forms other than symbols, lists, vectors,
+  sets and maps, `x is the same as 'x. For symbols, syntax-quote resolves the
+  symbol in the current context, yielding a fully-qualified symbol.
+  Non-qualified symbols ending in # are resolved to a generated symbol and all
+  references to that symbol within the form will use that generated symbol.
+
+  For lists, vectors, sets, and maps, syntax-quote establishes a template of the
+  corresponding data structure. Within the template, unqualified forms behave as
+  if recursively syntax-quoted, but forms can be exempted from such recursive
+  quoting by qualifying them with unquote or unquote-splicing, in which case
+  they will be treated as expressions and be replaced in the template by their
+  value, or sequence of values, respectively."
+  {:added "1.13"}
+  ([] ())
+  ([form]
+   (. clojure.lang.RT syntaxQuote form)))
+
 (defmacro delay
   "Takes a body of expressions and yields a Delay object that will
   invoke the body only the first time it is forced (with force or deref/@), and

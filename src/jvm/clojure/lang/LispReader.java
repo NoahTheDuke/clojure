@@ -988,12 +988,15 @@ public static class MetaReader extends AFn{
 public static class SyntaxQuoteReader extends AFn{
 	public Object invoke(Object reader, Object backquote, Object opts, Object pendingForms) {
 		PushbackReader r = (PushbackReader) reader;
+		Object form = read(r, true, null, true, opts, ensurePending(pendingForms));
+		return parseSyntaxQuote(form);
+	}
+
+	public static Object parseSyntaxQuote(Object form) {
 		try
 			{
 			Var.pushThreadBindings(
 					RT.map(GENSYM_ENV, PersistentHashMap.EMPTY));
-
-			Object form = read(r, true, null, true, opts, ensurePending(pendingForms));
 			return syntaxQuote(form);
 			}
 		finally
