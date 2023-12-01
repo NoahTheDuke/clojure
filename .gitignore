@@ -7,3 +7,14 @@ maven-classpath
 maven-classpath.properties
 .idea/
 *.iml
+.clj-kondo
+.cpcache
+.lsp
+.nrepl-port
+.project
+.settings/
+.vim
+deps.edn
+.nrepl-*
+*.patch
+*.diff

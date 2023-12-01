@@ -509,6 +509,9 @@ public static void loadLibrary(String libname){
     System.loadLibrary(libname);
 }
 
+public static Object syntaxQuote(Object form){
+	return LispReader.SyntaxQuoteReader.parseSyntaxQuote(form);
+}
 
 ////////////// Collections support /////////////////////////////////
 

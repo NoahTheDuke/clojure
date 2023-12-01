@@ -458,10 +458,40 @@
 ;; Syntax-quote (`, note, the "backquote" character), Unquote (~) and
 ;; Unquote-splicing (~@)
 
+(defmacro sq-or
+  ([] nil)
+  ([x] x)
+  ([x & next]
+   (syntax-quote
+     (let [or# ~x]
+       (if or# or# (sq-or ~@next))))))
+
 (deftest t-Syntax-quote
   (are [x y] (= x y)
       `() ()    ; was NPE before SVN r1337
-  ))
+      (syntax-quote ()) ()
+      (syntax-quote) ())
+  (let [literal '`(clj-880/example 1 2)
+        macro '(syntax-quote (clj-880/example 1 2))]
+    (is (not= literal macro) "Reader templates literal immediately")
+    (is (= literal (macroexpand-1 macro))) "Macro expands to same form as literal")
+  (let [foo :foo]
+    (is (= `(example 1 [2] #{~foo})
+           (syntax-quote (example 1 [2] #{~foo}))
+           '(clojure.test-clojure.reader/example 1 [2] #{:foo}))))
+  (is (= `[1 2 ~@[3 4 5] 6]
+         (syntax-quote [1 2 ~@[3 4 5] 6])
+         [1 2 3 4 5 6])
+      "unquote-splicing works correctly")
+  (testing "auto-gensym works within forms but not across forms"
+    (let [[l1 l2 l3] `[a# a# b#]
+          [v1 v2 v3] (syntax-quote [a# a# b#])]
+      (is (= l1 l2))
+      (is (not= l1 l3))
+      (is (= v1 v2))
+      (is (not= v1 v3))
+      (is (not= l1 v1))))
+  (is (= 5 (sq-or false nil 5))))
 
 ;; (read)
 ;; (read stream)
