@@ -10,6 +10,10 @@
   (is (= (w/postwalk-replace {:a :b} [:a {:a :a} (list 3 :c :a)])
          [:b {:b :b} (list 3 :c :b)])))
 
+(deftest t-keywordize-keys
+  (is (= (w/keywordize-keys {"a" 1, nil {"b" 2 "c" 3}, "d" 4})
+         {:a 1, nil {:b 2 :c 3}, :d 4})))
+
 (deftest t-stringify-keys
   (is (= (w/stringify-keys {:a 1, nil {:b 2 :c 3}, :d 4})
          {"a" 1, nil {"b" 2 "c" 3}, "d" 4})))
