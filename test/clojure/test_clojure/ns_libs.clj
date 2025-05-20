@@ -37,6 +37,12 @@
          (is (thrown? Exception (use :foo)))
          (is (thrown? Exception (use))))
 
+(deftest ns-location-data
+  (let [ns-meta (meta (the-ns 'clojure.test-clojure.ns-libs))]
+    (is (contains? ns-meta :line))
+    (is (contains? ns-meta :column))
+    (is (contains? ns-meta :file))))
+
 (deftest reimporting-deftypes
   (let [inst1 (binding [*ns* *ns*]
                 (eval '(do (ns exporter)
