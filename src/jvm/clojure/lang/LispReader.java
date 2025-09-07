@@ -255,56 +255,8 @@ static private Object read(PushbackReader r, boolean eofIsError, Object eofValue
 		{
 		for(; ;)
 			{
-
-			if(pendingForms instanceof List && !((List)pendingForms).isEmpty())
-				return ((List)pendingForms).remove(0);
-
-			int ch = read1(r);
-
-			while(isWhitespace(ch))
-				ch = read1(r);
-
-			if(ch == -1)
-				{
-				if(eofIsError)
-					throw Util.runtimeException("EOF while reading");
-				return eofValue;
-				}
-
-			if(returnOn != null && (returnOn.charValue() == ch)) {
-				return returnOnValue;
-			}
-
-			if(Character.isDigit(ch))
-				{
-				Object n = readNumber(r, (char) ch);
-				return n;
-				}
-
-			IFn macroFn = getMacro(ch);
-			if(macroFn != null)
-				{
-				Object ret = macroFn.invoke(r, (char) ch, opts, pendingForms);
-				//no op macros return the reader
-				if(ret == r)
-					continue;
-				return ret;
-				}
-
-			if(ch == '+' || ch == '-')
-				{
-				int ch2 = read1(r);
-				if(Character.isDigit(ch2))
-					{
-					unread(r, ch2);
-					Object n = readNumber(r, (char) ch);
-					return n;
-					}
-				unread(r, ch2);
-				}
-
-			String token = readToken(r, (char) ch);
-			return interpretToken(token, resolver);
+			Object ret = readSome(r, eofIsError, eofValue, returnOn, returnOnValue, opts, pendingForms, resolver);
+			if (ret != r) return ret;
 			}
 		}
 	catch(Exception e)
@@ -315,6 +267,64 @@ static private Object read(PushbackReader r, boolean eofIsError, Object eofValue
 		//throw Util.runtimeException(String.format("ReaderError:(%d,1) %s", rdr.getLineNumber(), e.getMessage()), e);
 		throw new ReaderException(rdr.getLineNumber(), rdr.getColumnNumber(), e);
 		}
+}
+
+private static Object readSome(PushbackReader r, boolean eofIsError, Object eofValue, Object opts, Object pendingForms) {
+	return readSome(r, eofIsError, eofValue, null, null, opts, pendingForms, (Resolver) RT.READER_RESOLVER.deref());
+}
+
+private static Object readSome(PushbackReader r, boolean eofIsError, Object eofValue, Character returnOn, Object returnOnValue, Object opts, Object pendingForms, Resolver resolver) {
+	if(pendingForms instanceof List && !((List)pendingForms).isEmpty())
+		return ((List)pendingForms).remove(0);
+
+	int ch = read1(r);
+
+	if(isWhitespace(ch)) {
+		do
+			ch = read1(r);
+		while(isWhitespace(ch));
+		unread(r, ch);
+		return r;
+	}
+
+	if(ch == -1)
+		{
+		if(eofIsError)
+			throw Util.runtimeException("EOF while reading");
+		return eofValue;
+		}
+
+	if(returnOn != null && (returnOn.charValue() == ch)) {
+		return returnOnValue;
+	}
+
+	if(Character.isDigit(ch))
+		{
+		Object n = readNumber(r, (char) ch);
+		return n;
+		}
+
+	IFn macroFn = getMacro(ch);
+	if(macroFn != null)
+		{
+		Object ret = macroFn.invoke(r, (char) ch, opts, pendingForms);
+		return ret;
+		}
+
+	if(ch == '+' || ch == '-')
+		{
+		int ch2 = read1(r);
+		if(Character.isDigit(ch2))
+			{
+			unread(r, ch2);
+			Object n = readNumber(r, (char) ch);
+			return n;
+			}
+		unread(r, ch2);
+		}
+
+	String token = readToken(r, (char) ch);
+	return interpretToken(token, resolver);
 }
 
 static private String readToken(PushbackReader r, char initch) {
@@ -657,23 +667,24 @@ public static class NamespaceMapReader extends AFn{
 		else
 		    unread(r, autoChar);
 
-		Object sym = null;
+		Symbol sym = null;
 		int nextChar = read1(r);
-		if(isWhitespace(nextChar)) {  // the #:: { } case or an error
-			if(auto) {
-				while (isWhitespace(nextChar))
-					nextChar = read1(r);
-				if(nextChar != '{') {
-					unread(r, nextChar);
-					throw Util.runtimeException("Namespaced map must specify a namespace");
-				}
-			} else {
+		if(isWhitespace(nextChar) && auto) {  // the #:: { } case or an error
+			while (isWhitespace(nextChar))
+				nextChar = read1(r);
+			if(nextChar != '{') {
 				unread(r, nextChar);
 				throw Util.runtimeException("Namespaced map must specify a namespace");
 			}
 		} else if(nextChar != '{') {  // #:foo { } or #::foo { }
 			unread(r, nextChar);
-			sym = read(r, true, null, false, opts, pendingForms);
+			Object ret = readSome(r, true, null, opts, pendingForms);
+			if (!(ret instanceof Symbol))
+				throw Util.runtimeException("Namespaced map must specify a namespace");
+			sym = (Symbol) ret;
+			if (sym.getNamespace() != null)
+				throw Util.runtimeException("Namespaced map must specify a valid namespace: " + sym);
+
 			nextChar = read1(r);
 			while(isWhitespace(nextChar))
 				nextChar = read1(r);
@@ -690,14 +701,12 @@ public static class NamespaceMapReader extends AFn{
                     ns = resolver.currentNS().name;
                 else
 				    ns = Compiler.currentNS().getName().getName();
-			} else if (!(sym instanceof Symbol) || ((Symbol)sym).getNamespace() != null) {
-				throw Util.runtimeException("Namespaced map must specify a valid namespace: " + sym);
 			} else {
 				Symbol resolvedNS;
 				if (resolver != null)
-                    resolvedNS = resolver.resolveAlias((Symbol) sym);
+                    resolvedNS = resolver.resolveAlias(sym);
 				else{
-                    Namespace rns = Compiler.currentNS().lookupAlias((Symbol)sym);
+                    Namespace rns = Compiler.currentNS().lookupAlias(sym);
                     resolvedNS = rns != null?rns.getName():null;
                 }
 
@@ -707,10 +716,8 @@ public static class NamespaceMapReader extends AFn{
 					ns = resolvedNS.getName();
 				}
 			}
-		} else if (!(sym instanceof Symbol) || ((Symbol)sym).getNamespace() != null) {
-			throw Util.runtimeException("Namespaced map must specify a valid namespace: " + sym);
 		} else {
-			ns = ((Symbol)sym).getName();
+			ns = sym.getName();
 		}
 
 		// Read map
@@ -1418,7 +1425,7 @@ public static class CtorReader extends AFn{
 	public Object invoke(Object reader, Object firstChar, Object opts, Object pendingForms){
 		PushbackReader r = (PushbackReader) reader;
 		pendingForms = ensurePending(pendingForms);
-		Object name = read(r, true, null, false, opts, pendingForms);
+		Object name = readSome(r, true, null, opts, pendingForms);
 		if (!(name instanceof Symbol))
 			throw new RuntimeException("Reader tag must be a symbol");
 		Symbol sym = (Symbol)name;
