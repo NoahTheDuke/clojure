@@ -691,6 +691,33 @@
           (reify LongsHintedProto
             (longs-hinted [_] (long-array [1])))))))
 
+;; CLJ-2094 - Eagerly evaluated protocols should refer to latest versions
+
+(require '[clojure.spec.alpha :as s])
+
+(defprotocol CLJ-2094
+  (execute [_]))
+
+(def partial-extends-clj-2094 (partial extends? CLJ-2094))
+(def partial-extenders-clj-2094 (partial extenders CLJ-2094))
+(def partial-find-protocol-method-clj-204
+  (partial find-protocol-method CLJ-2094 :execute))
+(def partial-satisfies-clj-2094 (partial satisfies? CLJ-2094))
+(s/def ::clj-2094 (partial satisfies? CLJ-2094))
+
+(defrecord Foo-2094 [])
+
+(extend-type Foo-2094
+  CLJ-2094
+  (execute [_]))
+
+(deftest test-satisfies-uses-latest
+  (is (partial-extends-clj-2094 Foo-2094))
+  (is (= [Foo-2094] (partial-extenders-clj-2094)))
+  (is (partial-find-protocol-method-clj-204 (->Foo-2094)))
+  (is (partial-satisfies-clj-2094 (->Foo-2094)))
+  (is (s/valid? ::clj-2094 (->Foo-2094))))
+
 ;; CLJ-1180 - resolve type hints in protocol methods
 
 (import 'clojure.lang.ISeq)

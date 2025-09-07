@@ -534,10 +534,16 @@
   ([^Class a ^Class b]
      (if (.isAssignableFrom a b) b a)))
 
+(defn- latest-p
+  "Get the latest version of the protocol before use."
+  [protocol]
+  (deref (:var protocol)))
+
 (defn find-protocol-impl [protocol x]
   (if (instance? (:on-interface protocol) x)
     x
     (let [c (class x)
+          protocol (latest-p protocol)
           impl #(get (:impls protocol) %)]
       (or (impl c)
           (and c (or (first (remove nil? (map impl (butlast (super-chain c)))))
@@ -560,13 +566,13 @@
   {:added "1.2"}
   [protocol atype]
   (boolean (or (implements? protocol atype) 
-               (get (:impls protocol) atype))))
+               (get (:impls (latest-p protocol)) atype))))
 
 (defn extenders 
   "Returns a collection of the types explicitly extending protocol"
   {:added "1.2"}
   [protocol]
-  (keys (:impls protocol)))
+  (keys (:impls (latest-p protocol))))
 
 (defn satisfies? 
   "Returns true if x satisfies the protocol"
