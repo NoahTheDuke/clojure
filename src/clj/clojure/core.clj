@@ -5849,6 +5849,12 @@
                name)
         metadata   (when (map? (first references)) (first references))
         references (if metadata (next references) references)
+        form-metadata (meta &form)
+        metadata (merge (when (not= "NO_SOURCE_PATH" *file*)
+                          {:line (:line form-metadata)
+                           :column (:column form-metadata)
+                           :file *file*})
+                        metadata)
         name (if metadata
                (vary-meta name merge metadata)
                name)
