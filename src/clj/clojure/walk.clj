@@ -95,17 +95,19 @@ the sorting function."}
   "Recursively transforms all map keys from strings to keywords."
   {:added "1.1"}
   [m]
-  (let [f (fn [[k v]] (if (string? k) [(keyword k) v] [k v]))]
-    ;; only apply to maps
-    (postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))
+  (postwalk (fn [kv] (if (and (map-entry? kv) (string? (key kv)))
+                       (clojure.lang.MapEntry. (keyword (key kv)) (val kv))
+                       kv))
+            m))
 
 (defn stringify-keys
   "Recursively transforms all map keys from keywords to strings."
   {:added "1.1"}
   [m]
-  (let [f (fn [[k v]] (if (keyword? k) [(name k) v] [k v]))]
-    ;; only apply to maps
-    (postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))
+  (postwalk (fn [kv] (if (and (map-entry? kv) (keyword? (key kv)))
+                       (clojure.lang.MapEntry. (name (key kv)) (val kv))
+                       kv))
+            m))
 
 (defn prewalk-replace
   "Recursively transforms form by replacing keys in smap with their
