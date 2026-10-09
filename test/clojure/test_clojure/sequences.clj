@@ -641,6 +641,16 @@
   (is (thrown? IndexOutOfBoundsException (nth (java.util.ArrayList. []) -1)))       ; ???
   (is (thrown? IndexOutOfBoundsException (nth (java.util.ArrayList. [1 2 3]) -1)))  ; ???
 
+  ;; CLJ-2822
+  (is (thrown? UnsupportedOperationException (nth 1 [1 2 3])))
+  (is (try ^{:line 12345} (nth 1 [1 2 3])
+           (catch UnsupportedOperationException e
+             (let [line (->> (.getStackTrace e)
+                             (drop-while #(= "clojure.lang.RT" (.getClassName ^StackTraceElement %)))
+                             (first)
+                             (#(.getLineNumber ^StackTraceElement %)))]
+               (= 12345 line)))))
+
   (are [x y] (= x y)
       (nth '(1) 0) 1
       (nth '(1 2 3) 0) 1
