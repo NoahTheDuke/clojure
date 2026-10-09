@@ -892,6 +892,25 @@ static public Object nth(Object coll, int n){
 	return nthFrom(Util.ret1(coll, coll = null), n);
 }
 
+static int castNthIdx(Object o) {
+	try {
+		return intCast(o);
+	} catch(ClassCastException ex) {
+		throw new UnsupportedOperationException(
+				"nth idx not supported on this type: " + o.getClass().getSimpleName());
+	}
+}
+
+/**
+ * Only for use in `clojure.core/nth`.
+ */
+static public Object nthImpl(Object coll, Object n){
+	int idx = castNthIdx(n);
+	if(coll instanceof Indexed)
+		return ((Indexed) coll).nth(idx);
+	return nthFrom(Util.ret1(coll, coll = null), idx);
+}
+
 static Object nthFrom(Object coll, int n){
 	if(coll == null)
 		return null;
@@ -933,6 +952,18 @@ static public Object nth(Object coll, int n, Object notFound){
 			return v.nth(n, notFound);
 	}
 	return nthFrom(coll, n, notFound);
+}
+
+/**
+ * Only for use in `clojure.core/nth`.
+ */
+static public Object nthImpl(Object coll, Object n, Object notFound){
+	int idx = castNthIdx(n);
+	if(coll instanceof Indexed) {
+		Indexed v = (Indexed) coll;
+		return v.nth(idx, notFound);
+	}
+	return nthFrom(coll, idx, notFound);
 }
 
 static Object nthFrom(Object coll, int n, Object notFound){
